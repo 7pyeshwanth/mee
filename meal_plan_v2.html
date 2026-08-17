@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Plan v2 — Recomp Protocol</title>
+<meta name="description" content="Interactive modular meal plan for body recomposition. Build your daily meals, track macros, and stay under 2500 kcal.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f0;--card:#ffffff;--text:#1a1a1a;--muted:#6b7280;--border:#e2e2dd;
+  --green:#16653a;--green-light:#e8f5e9;--green-dark:#0d4025;
+  --amber:#b45309;--amber-light:#fef3c7;
+  --red:#b91c1c;--red-light:#fee2e2;
+  --blue:#1e40af;--blue-light:#dbeafe;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:0 4px 12px rgba(0,0,0,0.08);
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.container{max-width:960px;margin:0 auto;padding:1rem}
+
+/* Header */
+.header{text-align:center;padding:2.5rem 1rem 1.5rem}
+.header h1{font-size:1.75rem;font-weight:800;color:var(--green);letter-spacing:-0.02em;margin-bottom:0.25rem}
+.header p{font-size:0.85rem;color:var(--muted);max-width:500px;margin:0 auto}
+.profile-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:0.4rem;margin-top:0.75rem}
+.profile-tags span{font-size:0.7rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:100px;background:var(--green-light);color:var(--green)}
+
+/* Nav */
+.nav{display:flex;overflow-x:auto;gap:0.25rem;padding:0.5rem 0;margin-bottom:1.5rem;scrollbar-width:none;border-bottom:1px solid var(--border)}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{padding:0.6rem 1rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-weight:600;font-size:0.8rem;color:var(--muted);white-space:nowrap;transition:all 0.15s;font-family:inherit}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* Sections */
+.section{display:none;animation:fadeUp 0.25s ease}
+.section.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Macro Tracker */
+.tracker{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;box-shadow:var(--shadow);position:sticky;top:0;z-index:10}
+.tracker-title{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:0.75rem}
+.tracker-bar-wrap{background:#e5e7eb;border-radius:100px;height:10px;overflow:hidden;margin-bottom:0.5rem}
+.tracker-bar{height:100%;border-radius:100px;transition:width 0.4s ease,background 0.3s;background:var(--green)}
+.tracker-bar.warn{background:var(--amber)}
+.tracker-bar.over{background:var(--red)}
+.tracker-cal{font-size:1.5rem;font-weight:800;letter-spacing:-0.02em}
+.tracker-cal span{font-size:0.85rem;font-weight:500;color:var(--muted)}
+.tracker-macros{display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap}
+.macro-pill{font-size:0.8rem;font-weight:600;padding:0.3rem 0.75rem;border-radius:100px}
+.macro-pill.ok{background:var(--green-light);color:var(--green)}
+.macro-pill.warn{background:var(--amber-light);color:var(--amber)}
+.macro-pill.bad{background:var(--red-light);color:var(--red)}
+
+/* Meal Cards */
+.meal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;box-shadow:var(--shadow);overflow:hidden}
+.meal-header{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;cursor:pointer;gap:1rem}
+.meal-header:hover{background:#fafaf8}
+.meal-slot{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted)}
+.meal-name{font-size:1rem;font-weight:700;color:var(--text);margin-top:0.15rem}
+.meal-quick-cal{font-size:0.85rem;font-weight:700;color:var(--green);white-space:nowrap}
+.meal-body{display:none;border-top:1px solid var(--border);padding:1rem 1.25rem}
+.meal-body.open{display:block}
+
+/* Combo Selector */
+.combo-select{width:100%;padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;font-weight:500;background:var(--card);cursor:pointer;margin-bottom:1rem;color:var(--text)}
+.combo-select:focus{outline:2px solid var(--green);outline-offset:1px}
+
+/* Ingredient Table */
+.ing-table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-bottom:0.75rem}
+.ing-table th{text-align:left;padding:0.5rem 0.6rem;font-weight:700;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap}
+.ing-table td{padding:0.45rem 0.6rem;border-bottom:1px solid #f3f3f0}
+.ing-table tr:last-child td{border-bottom:none}
+.ing-table .total-row td{font-weight:700;border-top:2px solid var(--border);background:#fafaf8}
+.ing-table .diff-row td{font-size:0.75rem;color:var(--muted);font-style:italic}
+
+/* Notes */
+.combo-note{font-size:0.8rem;padding:0.75rem;border-radius:8px;margin-top:0.5rem}
+.note-why{background:var(--green-light);color:var(--green-dark)}
+.note-batch{background:var(--blue-light);color:var(--blue)}
+.note-warn{background:var(--amber-light);color:var(--amber)}
+.tag{display:inline-block;font-size:0.65rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:100px;margin-right:0.25rem}
+.tag-veg{background:#dcfce7;color:#15803d}
+.tag-nv{background:#fef3c7;color:#92400e}
+.tag-whey{background:#dbeafe;color:#1e40af}
+.tag-nowhey{background:#f3e8ff;color:#6b21a8}
+
+/* Sample Week */
+.week-tabs{display:flex;gap:0.25rem;margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
+.week-tabs::-webkit-scrollbar{display:none}
+.week-btn{padding:0.5rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer;font-weight:600;font-size:0.8rem;white-space:nowrap;font-family:inherit;color:var(--muted);transition:0.15s}
+.week-btn.active{background:var(--green);color:white;border-color:var(--green)}
+.week-day{display:none;animation:fadeUp 0.2s}
+.week-day.active{display:block}
+
+/* Ingredients search */
+.search-input{width:100%;padding:0.7rem 1rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;margin-bottom:1rem;background:var(--card)}
+.search-input:focus{outline:2px solid var(--green);outline-offset:1px}
+.filter-btns{display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:1rem}
+.filter-btn{padding:0.35rem 0.75rem;border:1px solid var(--border);border-radius:100px;background:var(--card);cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;color:var(--muted);transition:0.15s}
+.filter-btn.active{background:var(--green);color:white;border-color:var(--green)}
+
+/* Accordion */
+.accord{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.75rem;background:var(--card);overflow:hidden;box-shadow:var(--shadow)}
+.accord-head{padding:1rem 1.25rem;cursor:pointer;font-weight:700;font-size:1rem;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.accord-head:hover{background:#fafaf8}
+.accord-head::after{content:'+';font-size:1.25rem;color:var(--green);font-weight:400;transition:transform 0.2s}
+.accord-head.open::after{content:'−'}
+.accord-body{display:none;padding:0 1.25rem 1.25rem;border-top:1px solid var(--border)}
+.accord-body.open{display:block}
+
+/* Generic table */
+.g-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin:0.75rem 0}
+.g-table th,.g-table td{padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid var(--border)}
+.g-table th{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);background:#fafaf8}
+.g-table tr:last-child td{border-bottom:none}
+
+/* Timeline */
+.timeline{position:relative;padding-left:2rem;margin:1rem 0}
+.timeline::before{content:'';position:absolute;left:0.6rem;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:1.25rem}
+.tl-item::before{content:'';position:absolute;left:-1.65rem;top:0.4rem;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--card)}
+.tl-time{font-size:0.75rem;font-weight:700;color:var(--green)}
+.tl-content{font-size:0.85rem;margin-top:0.15rem}
+.tl-content strong{color:var(--text)}
+.tl-warn{font-size:0.75rem;color:var(--red);font-weight:600;margin-top:0.15rem}
+
+/* Lists */
+.check-list{list-style:none;padding:0}
+.check-list li{padding:0.5rem 0;border-bottom:1px solid #f3f3f0;font-size:0.85rem;padding-left:1.5rem;position:relative}
+.check-list li::before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700}
+
+/* Responsive */
+@media(max-width:640px){
+  .container{padding:0.75rem}
+  .header h1{font-size:1.4rem}
+  .tracker-macros{gap:0.5rem}
+  .meal-header{flex-direction:column;align-items:flex-start;gap:0.25rem}
+  .ing-table{font-size:0.7rem}
+  .ing-table th,.ing-table td{padding:0.35rem 0.4rem}
+  .g-table{font-size:0.75rem}
+  .g-table th,.g-table td{padding:0.4rem 0.5rem}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🥗 Meal Plan — Recomp Protocol</h1>
+    <p>Modular building blocks. Pick combos per slot. Stay under 2,500 kcal.</p>
+    <div class="profile-tags">
+      <span>21M · 175cm · 75-80kg</span>
+      <span>Skinny Fat · Beginner</span>
+      <span>6-Day PPL + Sprint</span>
+      <span>Hyderabad · ₹4k Budget</span>
+    </div>
+  </div>
+
+  <nav class="nav" id="main-nav">
+    <button class="nav-btn active" data-tab="builder">🍽️ Meal Builder</button>
+    <button class="nav-btn" data-tab="week">📅 Sample Week</button>
+    <button class="nav-btn" data-tab="ingredients">📦 Ingredients</button>
+    <button class="nav-btn" data-tab="batch">🔄 Batch Prep</button>
+    <button class="nav-btn" data-tab="grocery">🛒 Grocery</button>
+    <button class="nav-btn" data-tab="supplements">💊 Supplements</button>
+    <button class="nav-btn" data-tab="tips">📋 Tips</button>
+  </nav>
+
+  <!-- ============ MEAL BUILDER ============ -->
+  <div class="section active" id="sec-builder">
+    <div class="tracker" id="macro-tracker">
+      <div class="tracker-title">Daily Macro Tracker</div>
+      <div class="tracker-bar-wrap"><div class="tracker-bar" id="cal-bar" style="width:0%"></div></div>
+      <div class="tracker-cal"><span id="cal-now">0</span> <span>/ 2,500 kcal</span></div>
+      <div class="tracker-macros">
+        <span class="macro-pill ok" id="pill-p">P: 0g</span>
+        <span class="macro-pill ok" id="pill-f">F: 0g</span>
+        <span class="macro-pill ok" id="pill-c">C: 0g</span>
+        <span class="macro-pill ok" id="pill-fib">Fib: 0g</span>
+      </div>
+    </div>
+    <div id="meal-cards"></div>
+  </div>
+
+  <!-- ============ SAMPLE WEEK ============ -->
+  <div class="section" id="sec-week">
+    <div class="week-tabs" id="week-tabs"></div>
+    <div id="week-content"></div>
+  </div>
+
+  <!-- ============ INGREDIENTS ============ -->
+  <div class="section" id="sec-ingredients">
+    <input class="search-input" id="ing-search" placeholder="Search ingredients..." type="text">
+    <div class="filter-btns" id="ing-filters"></div>
+    <div style="overflow-x:auto"><table class="g-table" id="ing-table"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <!-- ============ BATCH PREP ============ -->
+  <div class="section" id="sec-batch"></div>
+
+  <!-- ============ GROCERY ============ -->
+  <div class="section" id="sec-grocery"></div>
+
+  <!-- ============ SUPPLEMENTS ============ -->
+  <div class="section" id="sec-supplements"></div>
+
+  <!-- ============ TIPS ============ -->
+  <div class="section" id="sec-tips"></div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const SLOTS = [
+  {
+    id:'pw', name:'Pre-Workout', time:'6:00 AM', icon:'🌅',
+    target:[350,450],
+    combos:[
+      {id:'pw1',name:'Banana Oats Whey Smoothie',qp:true,tags:['veg','whey'],prep:2,
+       why:'Oats = slow carb + banana = fast carb → sustained energy. Whey = fastest-absorbing protein.',
+       batch:'None — 2 min blend.',
+       items:[
+        {n:'Oats (dry)',q:'30g',cal:114,c:20.3,p:3.9,f:2.1,fib:3},
+        {n:'Whey protein',q:'30g',cal:120,c:2,p:24,f:1.5,fib:0},
+        {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1},
+        {n:'Toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0}
+       ]},
+      {id:'pw2',name:'Sweet Potato Whey Shake + Chia',qp:false,tags:['veg','whey'],prep:5,
+       why:'Sweet potato for complex carbs + vitamin A. Chia for omega-3.',
+       batch:'🔄 Steam sweet potato batch on Sunday.',
+       items:[
+        {n:'Sweet potato (steamed)',q:'120g',cal:103,c:24,p:1.9,f:0.1,fib:3.6},
+        {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1},
+        {n:'Whey protein',q:'30g',cal:120,c:2,p:24,f:1.5,fib:0},
+        {n:'Toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0},
+        {n:'Chia seeds',q:'5g',cal:25,c:2.1,p:0.9,f:1.6,fib:1.7}
+       ]},
+      {id:'pw3',name:'Sattu Oats Smoothie (No Whey)',qp:false,tags:['veg','no-whey'],prep:2,
+       why:'Sattu = Bihar\'s natural protein powder (roasted gram). Budget-friendly whey alternative.',
+       batch:'None — 2 min blend.',warn:'Lower protein — compensate at breakfast.',
+       items:[
+        {n:'Oats (dry)',q:'37g',cal:141,c:25,p:4.8,f:2.6,fib:3.7},
+        {n:'Sattu flour',q:'25g',cal:96,c:16.2,p:5,f:1.8,fib:2.5},
+        {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1},
+        {n:'Toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0}
+       ]},
+      {id:'pw4',name:'Vegetable Poha + Peanuts + Banana',qp:false,tags:['veg','no-whey'],prep:10,
+       why:'Poha is light on stomach + peanuts add healthy fats.',
+       batch:'None — 10 min cook.',warn:'Very low protein — pair with high-protein breakfast.',
+       items:[
+        {n:'Poha (dry)',q:'50g',cal:192,c:39,p:3.3,f:0.6,fib:1},
+        {n:'Peanuts (roasted)',q:'15g',cal:85,c:2.4,p:3.9,f:7.4,fib:1.3},
+        {n:'Onion',q:'25g',cal:10,c:2.4,p:0.3,f:0,fib:0.4},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1}
+       ]},
+      {id:'pw5',name:'Rava Upma + Banana + Milk',qp:false,tags:['veg','no-whey'],prep:10,
+       why:'Rava is quick-cooking + veggies add fiber. Mild on stomach.',
+       batch:'None — 10 min cook.',warn:'Low protein — compensate at breakfast.',
+       items:[
+        {n:'Rava (dry)',q:'60g',cal:210,c:44.4,p:6,f:0.4,fib:1},
+        {n:'Capsicum + Carrots',q:'50g',cal:16,c:3.7,p:0.5,f:0.1,fib:1.2},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1},
+        {n:'Toned milk',q:'100ml',cal:44,c:4.7,p:3.1,f:1.5,fib:0}
+       ]},
+      {id:'pw6',name:'Banana Oats Smoothie (No Whey)',qp:false,tags:['veg','no-whey'],prep:2,
+       why:'Simple no-frills energy. Best for NV days when eggs/chicken cover protein.',
+       batch:'None — 2 min blend.',
+       items:[
+        {n:'Oats (dry)',q:'50g',cal:190,c:33.8,p:6.5,f:3.5,fib:5},
+        {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1},
+        {n:'Toned milk',q:'180ml',cal:79,c:8.5,p:5.6,f:2.7,fib:0}
+       ]}
+    ]
+  },
+  {
+    id:'bf', name:'Post-WO Breakfast', time:'8:30 AM', icon:'🍳',
+    target:[600,800],
+    combos:[
+      {id:'bf1',name:'Poha + Paneer Bhurji + Apple',qp:true,tags:['veg'],prep:15,
+       why:'Poha = fast carbs for glycogen reload. Paneer = casein protein. Apple = fiber + vitamin C.',
+       batch:'None — 15 min cook.',
+       items:[
+        {n:'Poha (dry)',q:'100g',cal:384,c:78,p:6.6,f:1.2,fib:2},
+        {n:'Paneer (bhurji)',q:'75g',cal:199,c:0.9,p:13.5,f:15.8,fib:0},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0},
+        {n:'Apple',q:'150g',cal:78,c:21,p:0.5,f:0.3,fib:3.6}
+       ]},
+      {id:'bf2',name:'Rava Upma + Paneer Bhurji + Papaya',qp:false,tags:['veg'],prep:15,
+       why:'South Indian classic. Papaya aids digestion with natural enzymes.',
+       batch:'None — 15 min cook.',
+       items:[
+        {n:'Rava (dry)',q:'100g',cal:350,c:74,p:10,f:0.6,fib:1.6},
+        {n:'Paneer (bhurji)',q:'75g',cal:199,c:0.9,p:13.5,f:15.8,fib:0},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0},
+        {n:'Papaya',q:'150g',cal:65,c:16.5,p:0.8,f:0.4,fib:2.7},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6}
+       ]},
+      {id:'bf3',name:'Egg Bhurji + 3 Rotis + Papaya',qp:false,tags:['nv'],prep:10,
+       why:'Eggs = gold standard post-workout protein. 3 rotis for carb replenishment. Papaya = digestive enzymes.',
+       batch:'None — 10 min cook.',
+       items:[
+        {n:'Whole eggs',q:'2 nos',cal:144,c:1.2,p:12,f:10,fib:0},
+        {n:'Egg white',q:'1 white',cal:17,c:0.2,p:3.6,f:0.1,fib:0},
+        {n:'Atta roti',q:'90g (3)',cal:300,c:60,p:9,f:1.5,fib:4.5},
+        {n:'Sweet potato',q:'30g',cal:26,c:6,p:0.5,f:0,fib:0.9},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'A2 ghee',q:'6g',cal:54,c:0,p:0,f:6,fib:0},
+        {n:'Papaya',q:'150g',cal:65,c:16.5,p:0.8,f:0.4,fib:2.7}
+       ]},
+      {id:'bf4',name:'Egg Omelette + 3 Rotis + Sweet Potato + Papaya',qp:false,tags:['nv'],prep:10,
+       why:'Extra egg whites = pure protein boost. Sweet potato = complex carbs + vitamin A.',
+       batch:'🔄 Sweet potato from batch.',
+       items:[
+        {n:'Whole eggs',q:'2 nos',cal:144,c:1.2,p:12,f:10,fib:0},
+        {n:'Egg whites',q:'2 whites',cal:34,c:0.4,p:7.2,f:0.2,fib:0},
+        {n:'Atta roti',q:'90g (3)',cal:300,c:60,p:9,f:1.5,fib:4.5},
+        {n:'Sweet potato',q:'80g',cal:69,c:16,p:1.3,f:0.1,fib:2.4},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Papaya',q:'150g',cal:65,c:16.5,p:0.8,f:0.4,fib:2.7}
+       ]},
+      {id:'bf5',name:'Egg Scramble + 1.5 Dosa + Sweet Potato + Apple',qp:false,tags:['nv'],prep:15,
+       why:'Dosa batter is fermented = better nutrient absorption. Sweet potato for sustained energy.',
+       batch:'🔄 Ferment dosa batter night before. Sweet potato from batch.',
+       items:[
+        {n:'Whole eggs',q:'2 nos',cal:144,c:1.2,p:12,f:10,fib:0},
+        {n:'Egg white',q:'1 white',cal:17,c:0.2,p:3.6,f:0.1,fib:0},
+        {n:'Dosa batter',q:'120g (1.5)',cal:180,c:36,p:4.5,f:0.8,fib:1.2},
+        {n:'Sweet potato',q:'150g',cal:129,c:30,p:2.4,f:0.2,fib:4.5},
+        {n:'Onion + Tomato',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Apple',q:'150g',cal:78,c:21,p:0.5,f:0.3,fib:3.6}
+       ]}
+    ]
+  },
+  {
+    id:'ln', name:'Lunch', time:'12:30 PM', icon:'🍛',
+    target:[500,750],
+    combos:[
+      {id:'ln1',name:'Rice + Soya Chunks + Toor Dal + Cabbage-Carrot + Buttermilk',qp:true,tags:['veg'],prep:20,
+       why:'Soya = cheapest complete protein. Toor dal adds amino acids. Buttermilk = probiotics. Squeeze lemon on dal for 3× iron absorption.',
+       batch:'🔄 Rice + dal + soya from batch. Chop veggies ahead.',
+       items:[
+        {n:'Steamed rice (cooked)',q:'65g',cal:85,c:18.2,p:1.8,f:0.2,fib:0.1},
+        {n:'Soya chunks (dry)',q:'50g',cal:173,c:16.5,p:26,f:0.3,fib:1.5},
+        {n:'Toor dal (dry)',q:'35g',cal:119,c:22.1,p:7.7,f:0.5,fib:2.8},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Cabbage',q:'50g',cal:12,c:2.9,p:0.6,f:0.1,fib:1.3},
+        {n:'Carrots',q:'50g',cal:21,c:5,p:0.5,f:0.1,fib:1.4},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'Buttermilk',q:'200ml',cal:40,c:3,p:2,f:1.5,fib:0}
+       ]},
+      {id:'ln2',name:'Rajma + Rice + Soya + Curd',qp:false,tags:['veg'],prep:25,
+       why:'Rajma = slow-digesting carbs + protein. Combined with soya for complete amino profile.',
+       batch:'🔄 Rajma MUST soak overnight! Rice + soya from batch.',warn:'Soak rajma night before!',
+       items:[
+        {n:'Rajma (dry)',q:'40g',cal:134,c:24,p:8.8,f:0.5,fib:4.8},
+        {n:'Steamed rice (cooked)',q:'50g',cal:65,c:14,p:1.4,f:0.2,fib:0.1},
+        {n:'Soya chunks (dry)',q:'50g',cal:173,c:16.5,p:26,f:0.3,fib:1.5},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0}
+       ]},
+      {id:'ln3',name:'Rice + Masoor Dal + Soya + Buttermilk',qp:false,tags:['veg'],prep:15,
+       why:'Masoor dal cooks fastest (no soaking needed). Quick weekday lunch.',
+       batch:'🔄 Rice + soya from batch. Masoor dal: 15 min pressure cooker.',
+       items:[
+        {n:'Masoor dal (dry)',q:'35g',cal:120,c:21,p:8.8,f:0.3,fib:2.5},
+        {n:'Steamed rice (cooked)',q:'70g',cal:91,c:19.6,p:1.9,f:0.2,fib:0.1},
+        {n:'Soya chunks (dry)',q:'50g',cal:173,c:16.5,p:26,f:0.3,fib:1.5},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'Buttermilk',q:'200ml',cal:40,c:3,p:2,f:1.5,fib:0}
+       ]},
+      {id:'ln4',name:'Chicken Curry + Rice + Toor Dal + Curd',qp:false,tags:['nv'],prep:25,
+       why:'Chicken breast = leanest animal protein. Rice for carbs. Dal for fiber + minerals.',
+       batch:'🔄 Rice + dal from batch. Cook chicken fresh.',
+       items:[
+        {n:'Chicken breast (cooked)',q:'130g',cal:215,c:0,p:40.3,f:4.7,fib:0},
+        {n:'Steamed rice (cooked)',q:'225g',cal:293,c:63,p:6.1,f:0.7,fib:0.5},
+        {n:'Toor dal (dry)',q:'30g',cal:102,c:18.9,p:6.6,f:0.5,fib:2.4},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0}
+       ]},
+      {id:'ln5',name:'Fish Curry (Rohu) + Rice + Masoor Dal + Curd',qp:false,tags:['nv'],prep:20,
+       why:'Rohu = omega-3 + lean protein. Masoor dal is quick-cooking.',
+       batch:'🔄 Rice from batch. Cook fish fresh.',
+       items:[
+        {n:'Rohu fish (cooked)',q:'200g',cal:240,c:0,p:40,f:8,fib:0},
+        {n:'Steamed rice (cooked)',q:'130g',cal:169,c:36.4,p:3.5,f:0.4,fib:0.3},
+        {n:'Masoor dal (dry)',q:'30g',cal:103,c:18,p:7.5,f:0.3,fib:2.1},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0}
+       ]},
+      {id:'ln6',name:'Chicken Biryani Style + Moong Dal + Raita',qp:false,tags:['nv'],prep:25,
+       why:'Biryani-style for flavor without excess oil. Moong dal is lightest on digestion.',
+       batch:'🔄 Rice from batch. Cook chicken fresh.',
+       items:[
+        {n:'Chicken breast (cooked)',q:'115g',cal:190,c:0,p:35.6,f:4.1,fib:0},
+        {n:'Biryani rice (cooked)',q:'185g',cal:241,c:51.8,p:5,f:0.6,fib:0.4},
+        {n:'Moong dal (dry)',q:'30g',cal:102,c:17.7,p:7.2,f:0.4,fib:2.4},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Fresh curd (raita)',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0}
+       ]},
+      {id:'ln7',name:'Prawns Masala + Rice + Toor Dal + Curd (Optional)',qp:false,tags:['nv'],prep:20,
+       why:'Prawns = highest protein-per-calorie seafood. Optional — swap chicken if budget tight.',
+       batch:'🔄 Rice from batch. Cook prawns fresh.',warn:'Budget: ₹500/kg. Skip if tight on budget.',
+       items:[
+        {n:'Prawns (cooked)',q:'150g',cal:149,c:0,p:36,f:1.5,fib:0},
+        {n:'Steamed rice (cooked)',q:'235g',cal:306,c:65.8,p:6.3,f:0.7,fib:0.5},
+        {n:'Toor dal (dry)',q:'30g',cal:102,c:18.9,p:6.6,f:0.5,fib:2.4},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0}
+       ]}
+    ]
+  },
+  {
+    id:'sn', name:'Evening Snack', time:'4:30 PM', icon:'🥜',
+    target:[215,340],
+    combos:[
+      {id:'sn1',name:'Moong Sprouts + Peanuts + Sattu Drink',qp:true,tags:['veg'],prep:5,
+       why:'Sprouts = living food with bioavailable nutrients. Peanuts for healthy fats. Sattu for sustained energy.',
+       batch:'🔄 Sprout moong 2 days ahead.',
+       items:[
+        {n:'Moong sprouts (steamed)',q:'80g',cal:58,c:8.8,p:5.6,f:0.2,fib:1.6},
+        {n:'Peanuts (roasted)',q:'15g',cal:85,c:2.4,p:3.9,f:7.4,fib:1.3},
+        {n:'Sattu flour',q:'25g',cal:96,c:16.2,p:5,f:1.8,fib:2.5}
+       ]},
+      {id:'sn2',name:'Besan Chilla + Peanuts + Buttermilk',qp:false,tags:['veg'],prep:10,
+       why:'Besan chilla = protein-rich flatbread. Buttermilk = cooling + probiotics.',
+       batch:'None — 10 min.',
+       items:[
+        {n:'Besan (gram flour)',q:'40g',cal:144,c:23,p:9,f:2.4,fib:4},
+        {n:'Peanuts (roasted)',q:'15g',cal:85,c:2.4,p:3.9,f:7.4,fib:1.3},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Buttermilk',q:'200ml',cal:40,c:3,p:2,f:1.5,fib:0}
+       ]},
+      {id:'sn3',name:'Palak Besan Chilla + Buttermilk',qp:false,tags:['veg'],prep:10,
+       why:'Palak + besan = iron + protein combo. Squeeze lemon on top for 3× iron absorption.',
+       batch:'None — 10 min.',
+       items:[
+        {n:'Besan (gram flour)',q:'40g',cal:144,c:23,p:9,f:2.4,fib:4},
+        {n:'Spinach (chopped)',q:'30g',cal:7,c:1.1,p:0.9,f:0.1,fib:0.7},
+        {n:'Onion',q:'25g',cal:10,c:2.4,p:0.3,f:0,fib:0.4},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Buttermilk',q:'200ml',cal:40,c:3,p:2,f:1.5,fib:0}
+       ]},
+      {id:'sn4',name:'Soya Stir-fry + Orange',qp:false,tags:['veg'],prep:5,
+       why:'Soya stir-fry takes 5 min. Orange = vitamin C for iron absorption.',
+       batch:'🔄 Soya from batch.',
+       items:[
+        {n:'Soya chunks (dry)',q:'25g',cal:87,c:8.2,p:13,f:0.2,fib:0.8},
+        {n:'French beans + Carrots',q:'50g',cal:19,c:4.3,p:0.7,f:0.1,fib:1.4},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Orange',q:'150g',cal:70,c:17.5,p:1.1,f:0.2,fib:3.6}
+       ]},
+      {id:'sn5',name:'Moong Sprouts + Peanuts + Orange',qp:false,tags:['veg'],prep:5,
+       why:'Lightest snack option. Good for days when lunch was heavy.',
+       batch:'🔄 Sprouts from batch.',
+       items:[
+        {n:'Moong sprouts (steamed)',q:'60g',cal:43,c:6.6,p:4.2,f:0.1,fib:1.2},
+        {n:'Peanuts (roasted)',q:'18g',cal:102,c:2.9,p:4.7,f:8.9,fib:1.5},
+        {n:'Orange',q:'150g',cal:70,c:17.5,p:1.1,f:0.2,fib:3.6}
+       ]},
+      {id:'sn6',name:'Soya Spinach Tikki + Orange',qp:false,tags:['veg'],prep:15,
+       why:'Tikki = protein-packed snack. Can batch-make and refrigerate.',
+       batch:'🔄 Make tikki batch Sunday, refrigerate.',
+       items:[
+        {n:'Soya chunks (dry)',q:'25g',cal:87,c:8.2,p:13,f:0.2,fib:0.8},
+        {n:'Spinach',q:'50g',cal:12,c:1.8,p:1.5,f:0.2,fib:1.1},
+        {n:'Besan',q:'20g',cal:72,c:11.5,p:4.5,f:1.2,fib:2},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Orange',q:'150g',cal:70,c:17.5,p:1.1,f:0.2,fib:3.6}
+       ]}
+    ]
+  },
+  {
+    id:'dn', name:'Dinner', time:'8:00 PM', icon:'🌙',
+    target:[400,560],
+    combos:[
+      {id:'dn1',name:'Protein Atta Roti + Masoor Dal + Tofu + Palak',qp:true,tags:['veg'],prep:25,
+       why:'Fermented protein atta (curd-soak method!) = better absorption. Dal + tofu = complete amino profile.',
+       batch:'🔄 Ferment protein atta dough 4-5 hrs with diluted curd. Dal from batch.',
+       items:[
+        {n:'Protein atta roti',q:'45g (1 roti)',cal:153,c:29,p:6.3,f:1.5,fib:2.5},
+        {n:'Masoor dal (dry)',q:'35g',cal:120,c:21,p:8.8,f:0.3,fib:2.4},
+        {n:'Firm tofu',q:'70g',cal:101,c:2.1,p:10.5,f:6.3,fib:0.3},
+        {n:'Palak (cooked)',q:'100g',cal:23,c:3.6,p:2.9,f:0.4,fib:2.2},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6}
+       ]},
+      {id:'dn2',name:'Moong Dal Khichdi + Beans-Capsicum Sabzi + Tofu',qp:false,tags:['veg'],prep:20,
+       why:'Khichdi = easiest dinner. One-pot meal. Tofu adds protein without heaviness.',
+       batch:'None — one-pot 20 min.',
+       items:[
+        {n:'Moong dal (dry)',q:'35g',cal:119,c:20.7,p:8.4,f:0.4,fib:2.8},
+        {n:'Steamed rice (cooked)',q:'70g',cal:91,c:19.6,p:1.9,f:0.2,fib:0.1},
+        {n:'Firm tofu',q:'70g',cal:101,c:2.1,p:10.5,f:6.3,fib:0.3},
+        {n:'French beans',q:'50g',cal:16,c:3.5,p:0.9,f:0.1,fib:1.4},
+        {n:'Capsicum',q:'50g',cal:10,c:2.3,p:0.4,f:0.1,fib:0.9},
+        {n:'A2 ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6}
+       ]},
+      {id:'dn3',name:'Chicken Palak + 2 Rotis + Warm Milk',qp:false,tags:['nv'],prep:20,
+       why:'Chicken + palak = iron + vitamin C pairing. Warm milk = casein for overnight muscle repair.',
+       batch:'🔄 Palak from batch-washed greens.',
+       items:[
+        {n:'Chicken breast (cooked)',q:'80g',cal:132,c:0,p:24.8,f:2.9,fib:0},
+        {n:'Palak',q:'100g',cal:23,c:3.6,p:2.9,f:0.4,fib:2.2},
+        {n:'Atta roti',q:'60g (2)',cal:200,c:40,p:6,f:1,fib:3},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Warm toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0}
+       ]},
+      {id:'dn4',name:'Grilled Fish + 2 Rotis + Lauki Curry + Milk',qp:false,tags:['nv'],prep:20,
+       why:'Fish at dinner = light protein + omega-3 before bed. Lauki is cooling + hydrating.',
+       batch:'None — cook fresh. Lauki 10 min.',
+       items:[
+        {n:'Rohu fish (cooked)',q:'100g',cal:120,c:0,p:20,f:4,fib:0},
+        {n:'Atta roti',q:'60g (2)',cal:200,c:40,p:6,f:1,fib:3},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Lauki (bottle gourd)',q:'100g',cal:15,c:3.4,p:0.6,f:0.1,fib:0.5},
+        {n:'Warm toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0}
+       ]},
+      {id:'dn5',name:'Chicken Egg Fried Rice + Warm Milk',qp:false,tags:['nv'],prep:15,
+       why:'Fried rice is cheat-meal feel without the cheat. Egg adds protein.',
+       batch:'🔄 Rice from batch.',
+       items:[
+        {n:'Chicken breast (cooked)',q:'80g',cal:132,c:0,p:24.8,f:2.9,fib:0},
+        {n:'Whole egg',q:'1 nos',cal:72,c:0.6,p:6,f:5,fib:0},
+        {n:'Steamed rice (cooked)',q:'140g',cal:182,c:39.2,p:3.8,f:0.4,fib:0.3},
+        {n:'Capsicum + Carrots',q:'100g',cal:31,c:7.3,p:0.9,f:0.2,fib:2.3},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Warm toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0}
+       ]},
+      {id:'dn6',name:'Chicken Thigh Curry + 2 Rotis + Milk',qp:false,tags:['nv'],prep:20,
+       why:'Chicken thigh = cheaper than breast + more flavorful. Higher fat — no added oil needed.',
+       batch:'None — cook fresh.',
+       items:[
+        {n:'Chicken thigh (cooked)',q:'90g',cal:176,c:0,p:23.4,f:9,fib:0},
+        {n:'Atta roti',q:'60g (2)',cal:200,c:40,p:6,f:1,fib:3},
+        {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0},
+        {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8},
+        {n:'Warm toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0}
+       ]}
+    ]
+  }
+];
+
+const SAMPLE_WEEK = [
+  {day:'Mon',type:'🥬 Veg',combos:['pw1','bf1','ln1','sn1','dn1']},
+  {day:'Tue',type:'🥬 Veg',combos:['pw2','bf2','ln2','sn2','dn2']},
+  {day:'Wed',type:'🍗 NV',combos:['pw6','bf3','ln4','sn3','dn3']},
+  {day:'Thu',type:'🐟 NV',combos:['pw4','bf4','ln5','sn4','dn4']},
+  {day:'Fri',type:'🍗 NV',combos:['pw5','bf5','ln6','sn5','dn5']},
+  {day:'Sat',type:'🥬 Veg',combos:['pw1','bf2','ln3','sn6','dn1']},
+  {day:'Sun',type:'🍗 NV',combos:['pw6','bf3','ln6','sn4','dn6']}
+];
+
+const INGREDIENTS = [
+  {n:'Chicken breast (cooked)',q:'130g',cal:215,c:0,p:40.3,f:4.7,fib:0,cat:'Protein-NV',bp:'❌ Cook fresh'},
+  {n:'Chicken thigh (cooked)',q:'90g',cal:176,c:0,p:23.4,f:9,fib:0,cat:'Protein-NV',bp:'❌ Cook fresh'},
+  {n:'Rohu fish (cooked)',q:'200g',cal:240,c:0,p:40,f:8,fib:0,cat:'Protein-NV',bp:'❌ Cook fresh'},
+  {n:'Prawns (cooked)',q:'150g',cal:149,c:0,p:36,f:1.5,fib:0,cat:'Protein-NV',bp:'❌ Cook fresh'},
+  {n:'Whole eggs',q:'2 nos (100g)',cal:144,c:1.2,p:12,f:10,fib:0,cat:'Protein-NV',bp:'❌ Cook fresh'},
+  {n:'Egg whites',q:'2 whites (66g)',cal:34,c:0.4,p:7.2,f:0.2,fib:0,cat:'Protein-NV',bp:'❌ Cook fresh'},
+  {n:'Paneer',q:'75g',cal:199,c:0.9,p:13.5,f:15.8,fib:0,cat:'Protein-Veg',bp:'❌ Fresh'},
+  {n:'Soya chunks (dry)',q:'50g',cal:173,c:16.5,p:26,f:0.3,fib:1.5,cat:'Protein-Veg',bp:'🔄 Soak+boil batch'},
+  {n:'Firm tofu',q:'70g',cal:101,c:2.1,p:10.5,f:6.3,fib:0.3,cat:'Protein-Veg',bp:'❌ Fresh'},
+  {n:'Whey protein',q:'30g (1 scoop)',cal:120,c:2,p:24,f:1.5,fib:0,cat:'Protein-Veg',bp:'❌ Use as needed'},
+  {n:'Oats (dry)',q:'30g',cal:114,c:20.3,p:3.9,f:2.1,fib:3,cat:'Carb Base',bp:'❌ Quick cook'},
+  {n:'Poha (dry)',q:'100g',cal:384,c:78,p:6.6,f:1.2,fib:2,cat:'Carb Base',bp:'❌ Quick cook'},
+  {n:'Rava (dry)',q:'100g',cal:350,c:74,p:10,f:0.6,fib:1.6,cat:'Carb Base',bp:'❌ Quick cook'},
+  {n:'Steamed rice (cooked)',q:'100g',cal:130,c:28,p:2.7,f:0.3,fib:0.2,cat:'Carb Base',bp:'🔄 Batch 2-day'},
+  {n:'Atta roti',q:'30g (1 roti)',cal:100,c:20,p:3,f:0.5,fib:1.5,cat:'Carb Base',bp:'❌ Cook fresh'},
+  {n:'Protein atta roti',q:'45g (1 roti)',cal:153,c:29,p:6.3,f:1.5,fib:2.5,cat:'Carb Base',bp:'🔄 Ferment dough 4-5h'},
+  {n:'Sweet potato (steamed)',q:'100g',cal:86,c:20,p:1.6,f:0.1,fib:3,cat:'Carb Base',bp:'🔄 Steam batch'},
+  {n:'Dosa batter',q:'80g (1 dosa)',cal:120,c:24,p:3,f:0.5,fib:0.8,cat:'Carb Base',bp:'🔄 Ferment night before'},
+  {n:'Banana',q:'120g',cal:107,c:27,p:1.3,f:0.4,fib:3.1,cat:'Fruit',bp:'❌ Ready to eat'},
+  {n:'Apple',q:'150g',cal:78,c:21,p:0.5,f:0.3,fib:3.6,cat:'Fruit',bp:'❌ Ready to eat'},
+  {n:'Papaya',q:'150g',cal:65,c:16.5,p:0.8,f:0.4,fib:2.7,cat:'Fruit',bp:'❌ Ready to eat'},
+  {n:'Orange',q:'150g',cal:70,c:17.5,p:1.1,f:0.2,fib:3.6,cat:'Fruit',bp:'❌ Ready to eat'},
+  {n:'Palak (spinach)',q:'100g',cal:23,c:3.6,p:2.9,f:0.4,fib:2.2,cat:'Vegetable',bp:'🔄 Wash+chop ahead'},
+  {n:'Cabbage',q:'50g',cal:12,c:2.9,p:0.6,f:0.1,fib:1.3,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'French beans',q:'50g',cal:16,c:3.5,p:0.9,f:0.1,fib:1.4,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'Carrots',q:'50g',cal:21,c:5,p:0.5,f:0.1,fib:1.4,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'Capsicum',q:'50g',cal:10,c:2.3,p:0.4,f:0.1,fib:0.9,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'Broccoli',q:'50g',cal:17,c:3.3,p:1.4,f:0.2,fib:1.3,cat:'Vegetable',bp:'🔄 Blanch+store'},
+  {n:'Cauliflower (gobi)',q:'50g',cal:13,c:2.5,p:1,f:0.1,fib:1,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'Bottle gourd (lauki)',q:'100g',cal:15,c:3.4,p:0.6,f:0.1,fib:0.5,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'Ridge gourd (turai)',q:'100g',cal:18,c:3.4,p:0.8,f:0.2,fib:0.8,cat:'Vegetable',bp:'❌ Cook fresh'},
+  {n:'Drumstick',q:'50g',cal:26,c:5.1,p:1.3,f:0.1,fib:1,cat:'Vegetable',bp:'❌ Cook fresh'},
+  {n:'Ladies finger (bhindi)',q:'50g',cal:17,c:3.8,p:0.9,f:0.1,fib:1.6,cat:'Vegetable',bp:'❌ Cook fresh'},
+  {n:'Brinjal (baingan)',q:'50g',cal:13,c:2.9,p:0.5,f:0.1,fib:1.5,cat:'Vegetable',bp:'❌ Cook fresh'},
+  {n:'Onion',q:'50g',cal:20,c:4.7,p:0.6,f:0,fib:0.8,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'Tomato',q:'50g',cal:9,c:2,p:0.5,f:0.1,fib:0.6,cat:'Vegetable',bp:'🔄 Chop ahead'},
+  {n:'A2 cow ghee',q:'5g',cal:45,c:0,p:0,f:5,fib:0,cat:'Fat/Oil',bp:'❌ Ready'},
+  {n:'Groundnut oil',q:'5g',cal:45,c:0,p:0,f:5,fib:0,cat:'Fat/Oil',bp:'❌ Ready'},
+  {n:'Peanuts (roasted)',q:'15g',cal:85,c:2.4,p:3.9,f:7.4,fib:1.3,cat:'Fat/Oil',bp:'❌ Ready'},
+  {n:'Chia seeds',q:'5g',cal:25,c:2.1,p:0.9,f:1.6,fib:1.7,cat:'Fat/Oil',bp:'❌ Ready'},
+  {n:'Toned milk',q:'200ml',cal:88,c:9.4,p:6.2,f:3,fib:0,cat:'Dairy',bp:'❌ Fresh'},
+  {n:'Fresh curd',q:'100g',cal:60,c:5,p:3.5,f:3,fib:0,cat:'Dairy',bp:'🔄 Set from milk nightly'},
+  {n:'Buttermilk',q:'200ml',cal:40,c:3,p:2,f:1.5,fib:0,cat:'Dairy',bp:'🔄 From curd'},
+  {n:'Toor dal (dry)',q:'35g',cal:119,c:22.1,p:7.7,f:0.5,fib:2.8,cat:'Legume',bp:'🔄 Pressure cook batch'},
+  {n:'Masoor dal (dry)',q:'35g',cal:120,c:21,p:8.8,f:0.3,fib:2.4,cat:'Legume',bp:'🔄 15 min no soak'},
+  {n:'Moong dal (dry)',q:'35g',cal:119,c:20.7,p:8.4,f:0.4,fib:2.8,cat:'Legume',bp:'🔄 Pressure cook batch'},
+  {n:'Rajma (dry)',q:'40g',cal:134,c:24,p:8.8,f:0.5,fib:4.8,cat:'Legume',bp:'🔄 MUST soak overnight'},
+  {n:'Moong sprouts',q:'80g',cal:58,c:8.8,p:5.6,f:0.2,fib:1.6,cat:'Legume',bp:'🔄 Sprout 2 days ahead'},
+  {n:'Sattu flour',q:'25g',cal:96,c:16.2,p:5,f:1.8,fib:2.5,cat:'Other',bp:'❌ Ready'},
+  {n:'Besan (gram flour)',q:'40g',cal:144,c:23,p:9,f:2.4,fib:4,cat:'Other',bp:'❌ Ready'}
+];
+
+// ===================== HELPERS =====================
+function comboTotals(combo){
+  let t={cal:0,c:0,p:0,f:0,fib:0};
+  combo.items.forEach(i=>{t.cal+=i.cal;t.c+=i.c;t.p+=i.p;t.f+=i.f;t.fib+=i.fib});
+  return t;
+}
+function findCombo(id){
+  for(let s of SLOTS) for(let c of s.combos) if(c.id===id) return c;
+  return null;
+}
+function r(n){return Math.round(n*10)/10}
+function statusClass(val,min,max){
+  if(val>=min && val<=max) return 'ok';
+  if(val<min*0.9 || val>max*1.1) return 'bad';
+  return 'warn';
+}
+
+// ===================== STATE =====================
+let selected = {};
+SLOTS.forEach(s=>{
+  let qp = s.combos.find(c=>c.qp);
+  selected[s.id] = qp ? qp.id : s.combos[0].id;
+});
+
+// ===================== RENDER =====================
+function updateTracker(){
+  let total={cal:0,c:0,p:0,f:0,fib:0};
+  Object.values(selected).forEach(id=>{
+    let combo=findCombo(id);
+    if(combo){let t=comboTotals(combo);total.cal+=t.cal;total.c+=t.c;total.p+=t.p;total.f+=t.f;total.fib+=t.fib}
+  });
+  let pct=Math.min((total.cal/2500)*100,100);
+  let bar=document.getElementById('cal-bar');
+  bar.style.width=pct+'%';
+  bar.className='tracker-bar'+(total.cal>2500?' over':total.cal>2400?' warn':'');
+  document.getElementById('cal-now').textContent=Math.round(total.cal).toLocaleString();
+  let pp=document.getElementById('pill-p');pp.textContent='P: '+r(total.p)+'g';pp.className='macro-pill '+statusClass(total.p,143,160);
+  let pf=document.getElementById('pill-f');pf.textContent='F: '+r(total.f)+'g';pf.className='macro-pill '+statusClass(total.f,57,70);
+  let pc=document.getElementById('pill-c');pc.textContent='C: '+r(total.c)+'g';pc.className='macro-pill '+statusClass(total.c,315,345);
+  let pfib=document.getElementById('pill-fib');pfib.textContent='Fib: '+r(total.fib)+'g';pfib.className='macro-pill '+statusClass(total.fib,26,38);
+}
+
+function renderMealCards(){
+  let container=document.getElementById('meal-cards');
+  container.innerHTML='';
+  SLOTS.forEach(slot=>{
+    let selCombo=findCombo(selected[slot.id]);
+    let t=comboTotals(selCombo);
+    let qpTotals=comboTotals(slot.combos.find(c=>c.qp)||slot.combos[0]);
+    let card=document.createElement('div');card.className='meal-card';
+    card.innerHTML=`
+      <div class="meal-header" onclick="this.nextElementSibling.classList.toggle('open')">
+        <div>
+          <div class="meal-slot">${slot.icon} ${slot.name} · ${slot.time}</div>
+          <div class="meal-name">${selCombo.name}</div>
+        </div>
+        <div class="meal-quick-cal">${Math.round(t.cal)} cal</div>
+      </div>
+      <div class="meal-body">
+        <select class="combo-select" onchange="selectCombo('${slot.id}',this.value)">
+          ${slot.combos.map(c=>{
+            let ct=comboTotals(c);
+            let label=c.name+' — '+Math.round(ct.cal)+' cal';
+            if(c.qp) label='⭐ '+label;
+            c.tags.forEach(tg=>{if(tg==='veg')label+=' 🥬';if(tg==='nv')label+=' 🍗';if(tg==='whey')label+=' [Whey]';if(tg==='no-whey')label+=' [No Whey]'});
+            return `<option value="${c.id}" ${c.id===selected[slot.id]?'selected':''}>${label}</option>`;
+          }).join('')}
+        </select>
+        <div style="display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:0.75rem">
+          ${selCombo.tags.map(tg=>{
+            if(tg==='veg')return'<span class="tag tag-veg">🥬 Veg</span>';
+            if(tg==='nv')return'<span class="tag tag-nv">🍗 Non-Veg</span>';
+            if(tg==='whey')return'<span class="tag tag-whey">Whey</span>';
+            if(tg==='no-whey')return'<span class="tag tag-nowhey">No Whey</span>';
+            return'';
+          }).join('')}
+          <span class="tag" style="background:#f3f4f6;color:#6b7280">${selCombo.prep} min prep</span>
+        </div>
+        <table class="ing-table">
+          <thead><tr><th>Ingredient</th><th>Qty</th><th>Cal</th><th>C</th><th>P</th><th>F</th><th>Fib</th></tr></thead>
+          <tbody>
+            ${selCombo.items.map(i=>`<tr><td>${i.n}</td><td>${i.q}</td><td>${r(i.cal)}</td><td>${r(i.c)}</td><td>${r(i.p)}</td><td>${r(i.f)}</td><td>${r(i.fib)}</td></tr>`).join('')}
+            <tr class="total-row"><td><strong>Total</strong></td><td></td><td><strong>${r(t.cal)}</strong></td><td><strong>${r(t.c)}</strong></td><td><strong>${r(t.p)}</strong></td><td><strong>${r(t.f)}</strong></td><td><strong>${r(t.fib)}</strong></td></tr>
+            ${!selCombo.qp?`<tr class="diff-row"><td colspan="2">vs Quick Pick</td><td>${(t.cal-qpTotals.cal>=0?'+':'')+r(t.cal-qpTotals.cal)}</td><td>${(t.c-qpTotals.c>=0?'+':'')+r(t.c-qpTotals.c)}</td><td>${(t.p-qpTotals.p>=0?'+':'')+r(t.p-qpTotals.p)}</td><td>${(t.f-qpTotals.f>=0?'+':'')+r(t.f-qpTotals.f)}</td><td>${(t.fib-qpTotals.fib>=0?'+':'')+r(t.fib-qpTotals.fib)}</td></tr>`:''}
+          </tbody>
+        </table>
+        <div class="combo-note note-why">💡 ${selCombo.why}</div>
+        <div class="combo-note note-batch" style="margin-top:0.4rem">📦 ${selCombo.batch}</div>
+        ${selCombo.warn?`<div class="combo-note note-warn" style="margin-top:0.4rem">⚠️ ${selCombo.warn}</div>`:''}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectCombo(slotId,comboId){
+  selected[slotId]=comboId;
+  renderMealCards();
+  updateTracker();
+}
+
+// ===================== SAMPLE WEEK =====================
+function renderWeek(){
+  let tabsEl=document.getElementById('week-tabs');
+  let contentEl=document.getElementById('week-content');
+  tabsEl.innerHTML='';contentEl.innerHTML='';
+  SAMPLE_WEEK.forEach((d,i)=>{
+    let btn=document.createElement('button');
+    btn.className='week-btn'+(i===0?' active':'');
+    btn.textContent=d.day+' '+d.type;
+    btn.onclick=()=>{
+      tabsEl.querySelectorAll('.week-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      contentEl.querySelectorAll('.week-day').forEach(p=>p.classList.remove('active'));
+      document.getElementById('wd-'+i).classList.add('active');
+    };
+    tabsEl.appendChild(btn);
+    let pane=document.createElement('div');
+    pane.className='week-day'+(i===0?' active':'');
+    pane.id='wd-'+i;
+    let dayTotal={cal:0,c:0,p:0,f:0,fib:0};
+    let html='';
+    d.combos.forEach((cid,j)=>{
+      let combo=findCombo(cid);
+      let t=comboTotals(combo);
+      dayTotal.cal+=t.cal;dayTotal.c+=t.c;dayTotal.p+=t.p;dayTotal.f+=t.f;dayTotal.fib+=t.fib;
+      html+=`<div class="meal-card" style="margin-bottom:0.75rem">
+        <div class="meal-header" onclick="this.nextElementSibling.classList.toggle('open')" style="padding:0.75rem 1rem">
+          <div>
+            <div class="meal-slot">${SLOTS[j].icon} ${SLOTS[j].name} · ${SLOTS[j].time}</div>
+            <div class="meal-name" style="font-size:0.9rem">${combo.name}</div>
+          </div>
+          <div class="meal-quick-cal">${Math.round(t.cal)} cal</div>
+        </div>
+        <div class="meal-body">
+          <table class="ing-table">
+            <thead><tr><th>Ingredient</th><th>Qty</th><th>Cal</th><th>C</th><th>P</th><th>F</th><th>Fib</th></tr></thead>
+            <tbody>
+              ${combo.items.map(i=>`<tr><td>${i.n}</td><td>${i.q}</td><td>${r(i.cal)}</td><td>${r(i.c)}</td><td>${r(i.p)}</td><td>${r(i.f)}</td><td>${r(i.fib)}</td></tr>`).join('')}
+              <tr class="total-row"><td><strong>Total</strong></td><td></td><td><strong>${r(t.cal)}</strong></td><td><strong>${r(t.c)}</strong></td><td><strong>${r(t.p)}</strong></td><td><strong>${r(t.f)}</strong></td><td><strong>${r(t.fib)}</strong></td></tr>
+            </tbody>
+          </table>
+          <div class="combo-note note-why">💡 ${combo.why}</div>
+        </div>
+      </div>`;
+    });
+    html+=`<div style="background:var(--green-light);border-radius:var(--radius);padding:1rem;margin-top:0.5rem">
+      <strong style="color:var(--green)">${d.day} Total: ${Math.round(dayTotal.cal)} kcal</strong> · P: ${r(dayTotal.p)}g · F: ${r(dayTotal.f)}g · C: ${r(dayTotal.c)}g · Fib: ${r(dayTotal.fib)}g
+      ${dayTotal.cal<2500?'<span style="float:right">✅</span>':'<span style="float:right;color:var(--red)">⚠️ Over</span>'}
+    </div>`;
+    pane.innerHTML=html;
+    contentEl.appendChild(pane);
+  });
+}
+
+// ===================== INGREDIENTS =====================
+let activeFilter='All';
+function renderIngredients(){
+  let cats=[...new Set(INGREDIENTS.map(i=>i.cat))];
+  let filtersEl=document.getElementById('ing-filters');
+  filtersEl.innerHTML='<button class="filter-btn active" onclick="filterIng(\'All\',this)">All</button>';
+  cats.forEach(c=>{filtersEl.innerHTML+=`<button class="filter-btn" onclick="filterIng('${c}',this)">${c}</button>`});
+  renderIngTable();
+}
+function filterIng(cat,btn){
+  activeFilter=cat;
+  document.querySelectorAll('#ing-filters .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderIngTable();
+}
+function renderIngTable(){
+  let search=document.getElementById('ing-search').value.toLowerCase();
+  let filtered=INGREDIENTS.filter(i=>{
+    if(activeFilter!=='All'&&i.cat!==activeFilter)return false;
+    if(search&&!i.n.toLowerCase().includes(search))return false;
+    return true;
+  });
+  let thead=document.querySelector('#ing-table thead');
+  thead.innerHTML='<tr><th>Ingredient</th><th>Std Qty</th><th>Cal</th><th>C(g)</th><th>P(g)</th><th>F(g)</th><th>Fib(g)</th><th>Category</th><th>Batch Prep?</th></tr>';
+  let tbody=document.querySelector('#ing-table tbody');
+  tbody.innerHTML=filtered.map(i=>`<tr><td>${i.n}</td><td>${i.q}</td><td>${i.cal}</td><td>${r(i.c)}</td><td>${r(i.p)}</td><td>${r(i.f)}</td><td>${r(i.fib)}</td><td><span class="tag ${i.cat.includes('NV')?'tag-nv':'tag-veg'}" style="font-size:0.6rem">${i.cat}</span></td><td>${i.bp}</td></tr>`).join('');
+}
+
+// ===================== BATCH PREP =====================
+function renderBatch(){
+  document.getElementById('sec-batch').innerHTML=`
+    <div class="accord"><div class="accord-head open" onclick="toggleAccord(this)">🔄 Sunday Night Batch Prep (45 min)</div>
+    <div class="accord-body open">
+      <ul class="check-list">
+        <li><strong>Rice</strong> — Cook 500g raw → ~1.2kg cooked → lasts Mon–Wed</li>
+        <li><strong>Toor / Masoor dal</strong> — Pressure cook 150g dry → lasts 3 days</li>
+        <li><strong>Soya chunks</strong> — Soak + boil 200g → refrigerate → use all week</li>
+        <li><strong>Moong sprouts</strong> — Soak 100g → sprout by Tuesday</li>
+        <li><strong>Set curd</strong> — 300ml warm milk + 1 tsp starter → ready by morning</li>
+        <li><strong>Wash + chop veggies</strong> — Palak, beans, carrots, capsicum → store in containers</li>
+        <li><strong>Protein atta dough</strong> — Mix with diluted curd → ferment 4–5 hrs → refrigerate 2 days</li>
+        <li><strong>Steam sweet potatoes</strong> — 500g batch → use for pre-WO shakes + breakfast</li>
+        <li><strong>Soya spinach tikki</strong> — Make batch of 8–10 tikkis → refrigerate for snacks</li>
+      </ul>
+    </div></div>
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🔄 Wednesday Night Top-Up (20 min)</div>
+    <div class="accord-body">
+      <ul class="check-list">
+        <li><strong>Rice</strong> — Cook another 500g for Thu–Sun</li>
+        <li><strong>Dal</strong> — Another batch (toor or moong)</li>
+        <li><strong>Set curd</strong> again from milk</li>
+        <li><strong>Sprout moong</strong> again (for Friday–Saturday snacks)</li>
+        <li><strong>Wash + chop</strong> next batch of veggies</li>
+      </ul>
+    </div></div>
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🫓 Protein Atta Fermentation Method</div>
+    <div class="accord-body">
+      <table class="g-table">
+        <tr><th>Step</th><th>Detail</th></tr>
+        <tr><td>1. Mix</td><td>100g protein atta + 2–3 tbsp curd + 50ml water → loose dough</td></tr>
+        <tr><td>2. Ferment</td><td>Cover and keep at room temp (30–35°C Hyderabad) for <strong>4–5 hours</strong></td></tr>
+        <tr><td>3. Salt</td><td>Add salt <strong>after</strong> fermentation (salt slows bacteria)</td></tr>
+        <tr><td>4. Roll</td><td>Roll slightly thicker than normal — fermented dough tears easier</td></tr>
+        <tr><td>5. Lemon</td><td>Squeeze half lemon after cooking → 3× iron absorption boost</td></tr>
+      </table>
+      <div class="combo-note note-why" style="margin-top:0.75rem">
+        💡 <strong>What happens:</strong> Curd's Lactobacillus → lactic acid → activates phytase → breaks down phytic acid (30–60% reduction) → deactivates soy trypsin inhibitors → protein digestibility improves from ~75% to ~90%.
+      </div>
+    </div></div>
+  `;
+}
+
+// ===================== GROCERY =====================
+function renderGrocery(){
+  document.getElementById('sec-grocery').innerHTML=`
+    <div class="accord"><div class="accord-head open" onclick="toggleAccord(this)">🌾 Staples (₹1,475/month)</div><div class="accord-body open">
+    <table class="g-table"><thead><tr><th>Item</th><th>Monthly Qty</th><th>Price (₹)</th><th>Notes</th></tr></thead><tbody>
+      <tr><td>Rice (raw)</td><td>5 kg</td><td>300</td><td>Sona masoori</td></tr>
+      <tr><td>Regular atta</td><td>2 kg</td><td>80</td><td>NV day rotis</td></tr>
+      <tr><td>Protein atta</td><td>1.5 kg</td><td>225</td><td>Veg day rotis</td></tr>
+      <tr><td>Rolled oats</td><td>1 kg</td><td>120</td><td>Pre-workout</td></tr>
+      <tr><td>Toor dal</td><td>1 kg</td><td>140</td><td>Staple</td></tr>
+      <tr><td>Moong dal</td><td>500g</td><td>70</td><td>Khichdi</td></tr>
+      <tr><td>Masoor dal</td><td>500g</td><td>60</td><td>Quick dal</td></tr>
+      <tr><td>Rajma</td><td>500g</td><td>65</td><td>Tuesday lunch</td></tr>
+      <tr><td>Soya chunks</td><td>1 kg</td><td>80</td><td>⭐ Primary veg protein</td></tr>
+      <tr><td>Besan</td><td>500g</td><td>45</td><td>Chilla, tikki</td></tr>
+      <tr><td>Sattu flour</td><td>500g</td><td>55</td><td>Pre-WO shakes</td></tr>
+      <tr><td>Poha</td><td>500g</td><td>30</td><td>Breakfast</td></tr>
+      <tr><td>Rava / Sooji</td><td>1 kg</td><td>50</td><td>Upma</td></tr>
+      <tr><td>Peanuts</td><td>750g</td><td>100</td><td>Snacks</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🥛 Dairy (₹1,080/month)</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Item</th><th>Monthly Qty</th><th>Price (₹)</th></tr></thead><tbody>
+      <tr><td>Toned milk</td><td>15L (~500ml/day)</td><td>780</td></tr>
+      <tr><td>Curd</td><td>Set at home</td><td>0</td></tr>
+      <tr><td>Paneer</td><td>750g</td><td>300</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🍗 Non-Veg Protein (₹1,561/month)</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Item</th><th>Monthly Qty</th><th>Price (₹)</th></tr></thead><tbody>
+      <tr><td>Chicken breast</td><td>1.5 kg</td><td>525</td></tr>
+      <tr><td>Chicken thigh</td><td>500g</td><td>100</td></tr>
+      <tr><td>Fish — Rohu</td><td>1.2 kg</td><td>300</td></tr>
+      <tr><td>Prawns (optional)</td><td>600g</td><td>300</td></tr>
+      <tr><td>Eggs</td><td>48 nos</td><td>336</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🥕 Produce (₹830/month)</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Item</th><th>Monthly Qty</th><th>Price (₹)</th></tr></thead><tbody>
+      <tr><td>Onions</td><td>3 kg</td><td>90</td></tr>
+      <tr><td>Tomatoes</td><td>2 kg</td><td>60</td></tr>
+      <tr><td>Palak</td><td>2 kg</td><td>80</td></tr>
+      <tr><td>Seasonal veggies</td><td>3 kg</td><td>150</td></tr>
+      <tr><td>Sweet potatoes</td><td>1 kg</td><td>40</td></tr>
+      <tr><td>Bananas</td><td>30 nos</td><td>100</td></tr>
+      <tr><td>Seasonal fruit</td><td>~4 kg</td><td>200</td></tr>
+      <tr><td>Moong (sprouting)</td><td>250g</td><td>30</td></tr>
+      <tr><td>Misc (lemon, chili, coriander)</td><td>—</td><td>80</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">💰 Budget Tiers</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Tier</th><th>Cost/mo</th><th>What Changes</th></tr></thead><tbody>
+      <tr><td><strong>Strict</strong></td><td>₹4,000</td><td>No prawns, bone-in chicken only, no whey, bananas only, bulk buy</td></tr>
+      <tr><td><strong>Moderate</strong></td><td>₹4,500</td><td>Bone-in chicken, whey on veg days, seasonal fruits</td></tr>
+      <tr><td><strong>Optimal</strong></td><td>₹5,500+</td><td>Full plan — breast, prawns, whey, all fruits</td></tr>
+    </tbody></table>
+    <div class="combo-note note-why" style="margin-top:0.75rem">💡 Start with <strong>Strict tier</strong> for your ₹4k budget. The protein drop from skipping whey (~10g on veg days) is acceptable — soya + sattu + besan cover it.</div>
+    </div></div>
+  `;
+}
+
+// ===================== SUPPLEMENTS =====================
+function renderSupplements(){
+  document.getElementById('sec-supplements').innerHTML=`
+    <div class="accord"><div class="accord-head open" onclick="toggleAccord(this)">⚠️ MUST Supplement (Can't Get Enough From Food)</div><div class="accord-body open">
+    <table class="g-table"><thead><tr><th>Supplement</th><th>Form</th><th>Dose</th><th>Timing</th><th>Why</th></tr></thead><tbody>
+      <tr><td><strong>Magnesium</strong></td><td>Bisglycinate</td><td>300mg elemental</td><td>Before bed (10 PM)</td><td>300+ enzymatic processes. Modern soil depleted 40–80%. Aids sleep + recovery. Can't detect deficiency via blood test.</td></tr>
+      <tr><td><strong>Zinc</strong></td><td>Bisglycinate / Monomethionine</td><td>15–20mg elemental</td><td>Morning after breakfast</td><td>Critical for testosterone. Plant zinc poorly absorbed. Training increases need 20%+. Can't detect via blood test.</td></tr>
+      <tr><td><strong>Vitamin D3</strong></td><td>Cholecalciferol</td><td>2000–4000 IU</td><td>With lunch (fat meal)</td><td>Most Indians deficient. Needed for calcium absorption. Body can't use calcium or D3 without magnesium.</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🔬 Get Blood Work First</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Supplement</th><th>Form</th><th>Dose</th><th>Condition</th></tr></thead><tbody>
+      <tr><td><strong>Iron</strong></td><td>Bisglycinate</td><td>29mg elemental</td><td>Only if ferritin &lt;30 ng/mL. Alternate mornings, empty stomach. ⚠️ NEVER mega-dose without blood work — toxicity + cancer risk.</td></tr>
+      <tr><td><strong>B12</strong></td><td>Methylcobalamin</td><td>1000 mcg</td><td>If blood work shows low. Morning.</td></tr>
+      <tr><td><strong>Omega-3</strong></td><td>Fish oil (EPA+DHA)</td><td>1000mg</td><td>If not eating fish 2×/week. With meals.</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">⏰ Timing & Spacing Rules</div><div class="accord-body">
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">6:00 AM — Pre-Workout</div><div class="tl-content">No supplements. Just eat and train.</div></div>
+      <div class="tl-item"><div class="tl-time">8:30 AM — After Breakfast</div><div class="tl-content"><strong>Zinc</strong> 15–20mg with food</div><div class="tl-warn">NOT with iron, magnesium, or calcium</div></div>
+      <div class="tl-item"><div class="tl-time">10:30 AM — Coffee ☕</div><div class="tl-content">Keep <strong>45-min gap</strong> from iron/zinc-rich meals</div><div class="tl-warn">Tannins block iron absorption</div></div>
+      <div class="tl-item"><div class="tl-time">12:30 PM — With Lunch</div><div class="tl-content"><strong>Vitamin D3</strong> 2000–4000 IU (needs fat for absorption)</div></div>
+      <div class="tl-item"><div class="tl-time">3:30 PM — Coffee ☕</div><div class="tl-content">Same 45-min gap rule</div></div>
+      <div class="tl-item"><div class="tl-time">10:00 PM — Before Bed</div><div class="tl-content"><strong>Magnesium</strong> 300mg (aids sleep + recovery)</div><div class="tl-warn">NOT with zinc, iron, or calcium</div></div>
+    </div>
+    </div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">✅ Already Covered by This Meal Plan</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Mineral</th><th>Covered By</th></tr></thead><tbody>
+      <tr><td>Sodium</td><td>Iodized salt in cooking</td></tr>
+      <tr><td>Potassium</td><td>Bananas, dal, rice, veggies, milk, buttermilk</td></tr>
+      <tr><td>Iodine</td><td>Iodized table salt — NEVER switch to pink/rock salt as staple!</td></tr>
+      <tr><td>Calcium</td><td>500ml milk/day + curd + paneer = ~800–1000mg</td></tr>
+      <tr><td>Selenium</td><td>Eggs (NV days) + whole grains</td></tr>
+      <tr><td>Phosphorus</td><td>High protein diet covers it</td></tr>
+      <tr><td>Chromium, Molybdenum, Manganese</td><td>Whole foods diet covers all</td></tr>
+      <tr><td>Sulfur</td><td>Protein (methionine, cysteine)</td></tr>
+      <tr><td>Copper</td><td>Dal, peanuts, vegetables</td></tr>
+      <tr><td>Chloride</td><td>Table salt (NaCl)</td></tr>
+      <tr><td>Fluoride</td><td>Fluoridated water + toothpaste</td></tr>
+    </tbody></table></div></div>
+  `;
+}
+
+// ===================== TIPS =====================
+function renderTips(){
+  document.getElementById('sec-tips').innerHTML=`
+    <div class="accord"><div class="accord-head open" onclick="toggleAccord(this)">🔥 Non-Negotiable Rules</div><div class="accord-body open">
+    <ul class="check-list">
+      <li><strong>Iodized table salt only</strong> — never Himalayan/rock/pink as staple</li>
+      <li><strong>0 added sugar</strong> — no refined sugar (jaggery sparingly OK)</li>
+      <li><strong>Squeeze lemon on dal</strong> — vitamin C = 3× iron absorption</li>
+      <li><strong>Coffee gap</strong> — 45-min gap from iron/zinc-rich meals</li>
+      <li><strong>Warm milk before bed</strong> — casein for overnight recovery + calcium</li>
+      <li><strong>Ghee on rice/roti</strong> — fat-soluble vitamin absorption</li>
+      <li><strong>Soak rajma overnight</strong> — reduces anti-nutrients</li>
+      <li><strong>Ferment protein atta with curd</strong> — 4–5 hrs for best absorption</li>
+    </ul>
+    </div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">📈 Progress Tracking</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>What</th><th>Frequency</th><th>Method</th></tr></thead><tbody>
+      <tr><td>Body weight</td><td>Daily AM (fasted)</td><td>Scale — track 7-day moving average</td></tr>
+      <tr><td>Waist measurement</td><td>Weekly (Sunday AM)</td><td>Tape at navel</td></tr>
+      <tr><td>Gym lifts</td><td>Every session</td><td>Notebook / app</td></tr>
+      <tr><td>Mirror photos</td><td>Bi-weekly</td><td>Same lighting, same pose</td></tr>
+      <tr><td>Energy + sleep</td><td>Daily</td><td>1–10 rating</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🔧 Adjustment Protocol (After 3-4 Weeks)</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Observation</th><th>Action</th></tr></thead><tbody>
+      <tr><td>Weight dropping + waist shrinking</td><td>✅ Recomp working — stay the course</td></tr>
+      <tr><td>Weight stable + waist shrinking</td><td>✅ Perfect recomp — muscle replacing fat</td></tr>
+      <tr><td>Weight + waist increasing</td><td>⚠️ In surplus — reduce rice 50g at lunch</td></tr>
+      <tr><td>Weight dropping + arms shrinking</td><td>⚠️ In deficit — add 1 roti at dinner</td></tr>
+      <tr><td>No changes after 4 weeks</td><td>Review training — progressive overload?</td></tr>
+    </tbody></table></div></div>
+
+    <div class="accord"><div class="accord-head" onclick="toggleAccord(this)">🏋️ Training Notes (PPL 6-Day)</div><div class="accord-body">
+    <table class="g-table"><thead><tr><th>Day</th><th>Focus</th><th>Priority Lifts</th></tr></thead><tbody>
+      <tr><td>Mon</td><td>Push</td><td>Bench Press, OHP, Dips</td></tr>
+      <tr><td>Tue</td><td>Pull</td><td>Deadlift, Barbell Rows, Pull-ups</td></tr>
+      <tr><td>Wed</td><td>Legs</td><td>Squats, Leg Press, RDL</td></tr>
+      <tr><td>Thu</td><td>Push</td><td>Incline DB Press, Lateral Raises</td></tr>
+      <tr><td>Fri</td><td>Pull</td><td>Rows, Chin-ups, Curls</td></tr>
+      <tr><td>Sat</td><td>Legs + Core</td><td>Front Squats, Lunges, Planks</td></tr>
+      <tr><td><strong>Sun</strong></td><td><strong>REST</strong></td><td>Active recovery — walk, stretch</td></tr>
+    </tbody></table>
+    <div class="combo-note note-why" style="margin-top:0.75rem">💡 <strong>Beginner priority:</strong> Progressive overload (add weight or reps weekly) on compound lifts. Form > Weight always.</div>
+    </div></div>
+  `;
+}
+
+// ===================== NAV =====================
+function toggleAccord(el){
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById('sec-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('ing-search').addEventListener('input',renderIngTable);
+
+// ===================== INIT =====================
+renderMealCards();
+updateTracker();
+renderWeek();
+renderIngredients();
+renderBatch();
+renderGrocery();
+renderSupplements();
+renderTips();
+</script>
+</body>
+</html>
